@@ -1,3 +1,8 @@
+#/usr/bin/env python3
+#####################################
+# Evm RPC Aggregator & Execution Timer
+# Darkerego ~ 2024 ~ tips ~ 0xDA2De7d401833bD1Ae658f38E2FFaF2e08E440a9
+######################################
 import argparse
 import ast
 import itertools
