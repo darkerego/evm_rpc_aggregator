@@ -1,6 +1,9 @@
 # evm_rpc_aggregator
 Find the fastest pubic rpcs via chainlist.org
 
+### About
+
+
 <pre>
 usage: rpc_lib.py [-h] [-v] chain_id protocol {timer,tester} ...
 
@@ -43,3 +46,8 @@ anon@foffmybox:~/PycharmProjects/Ethersweep$ venv/bin/python3 rpc_lib.py 56 http
  ('https://bsc-dataseed1.ninicoin.io', 0.14092755317687988)]
 
 </pre>
+
+
+### ToDo
+  - Create aq requirements.txt
+  - Create async version
