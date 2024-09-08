@@ -49,5 +49,5 @@ anon@foffmybox:~/PycharmProjects/Ethersweep$ venv/bin/python3 rpc_lib.py 56 http
 
 
 ### ToDo
-  - Create aq requirements.txt
+  - Create a requirements.txt
   - Create async version
