@@ -12,12 +12,15 @@ import re
 from time import time
 import requests
 import web3
+import web3.eth
 import websockets
 from web3 import Web3
 import dotenv
 from web3.exceptions import ExtraDataLengthError
 from operator import itemgetter
 from web3.middleware import ExtraDataToPOAMiddleware
+
+import lib.abi_lib
 
 dotenv.load_dotenv()
 
@@ -100,6 +103,12 @@ class ChainRPCIterator:
     def time_rpc(self, w3_instance: web3.Web3, endpoint: str) -> tuple[str, float]:
         t = Timer(endpoint)
         blocks = w3_instance.eth.get_block('latest', True)
+        # make sure this node actually functions
+        try:
+            w3_instance.eth.get_balance('0x0000000000000000000000000000000000000000')
+            w3_instance.eth.fee_history(5, 'latest', [10, 20, 30])
+        except Exception as err:
+            return None, 0
         assert blocks is not None
         elapsed = t.stop()
         return endpoint, elapsed
@@ -126,19 +135,20 @@ class ChainRPCIterator:
         if protocol == 'http':
             for rpc in self.rpc_list:
                 # print(rpc)
-                if rpc is not None:
+                if rpc is not None and not re.findall('flashbots', rpc):
                     if re.findall(r'INFURA_API_KEY', rpc):
                         rpc = rpc.replace('${INFURA_API_KEY}', self.INFURA_API_KEY)
                         # print('rpc', rpc)
                     if protocol == "http":
                         web3_instance = Web3(Web3.HTTPProvider(rpc))
-                        if web3_instance.is_connected():
+                        if web3_instance.is_connected() and web3_instance.eth.chain_id > 0:
                             if self.test_poa_chain(web3_instance):
                                 web3_instance.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
                             ep, run_time = self.time_rpc(web3_instance, rpc)
-                            rpc_time_map_http.update({ep: run_time})
-                            web3_instances.append(web3_instance)
-                            self.initialized_http_list.append(web3_instance)
+                            if ep:
+                                rpc_time_map_http.update({ep: run_time})
+                                web3_instances.append(web3_instance)
+                                self.initialized_http_list.append(web3_instance)
                         else:
                             if self.verbose:
                                 print(f"Warning: Unable to connect to RPC {rpc}")
@@ -153,18 +163,19 @@ class ChainRPCIterator:
                     if protocol == "ws":
                         web3_instance = Web3(Web3.LegacyWebSocketProvider(rpc))
                         try:
-                            if web3_instance.is_connected():
+                            if web3_instance.is_connected() and web3_instance.eth.chain_id > 0:
                                 if self.test_poa_chain(web3_instance):
                                     web3_instance.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-                                    ep, run_time = self.time_rpc(web3_instance, rpc)
+                                ep, run_time = self.time_rpc(web3_instance, rpc)
+                                if ep:
                                     rpc_time_map_ws.update({ep: run_time})
 
-                                web3_instances.append(web3_instance)
-                                self.initialized_ws_list.append(web3_instance)
+                                    web3_instances.append(web3_instance)
+                                    self.initialized_ws_list.append(web3_instance)
                             else:
                                 if self.verbose:
                                     print(f"Warning: Unable to connect to RPC {rpc}")
-                        except (websockets.exceptions.InvalidStatusCode,websockets.exceptions.ConnectionClosedError) as err:
+                        except (websockets.exceptions.InvalidStatusCode,websockets.exceptions.ConnectionClosedError, web3.exceptions.Web3RPCError) as err:
                             if self.verbose:
                                 print(f"Warning: Unable to connect to RPC {rpc}: {err}")
                         else:
@@ -221,3 +232,5 @@ if __name__ == '__main__':
         w3s = cri.get_web3_instances(args.protocol, args.verbose)
         times = cri.time_maps
         pprint.pp(times)
+
+
