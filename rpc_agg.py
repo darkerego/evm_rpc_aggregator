@@ -9,11 +9,13 @@ import itertools
 import os
 import pprint
 import re
+import sys
 from time import time
 import requests
 import web3
 import web3.eth
 import websockets
+from eth_utils import to_checksum_address
 from web3 import Web3
 import dotenv
 from web3.exceptions import ExtraDataLengthError
@@ -100,14 +102,31 @@ class ChainRPCIterator:
         else:
             raise StopIteration
 
-    def time_rpc(self, w3_instance: web3.Web3, endpoint: str) -> tuple[str, float]:
+    def time_rpc(self, w3_instance: web3.Web3, endpoint: str, quick_mode:bool = False) -> tuple[str, float]:
         t = Timer(endpoint)
-        blocks = w3_instance.eth.get_block('latest', True)
-        # make sure this node actually functions
+
         try:
-            w3_instance.eth.get_balance('0x0000000000000000000000000000000000000000')
-            w3_instance.eth.fee_history(5, 'latest', [10, 20, 30])
+            blocks = w3_instance.eth.get_block('latest', True)
+
+            if not quick_mode:
+                cid = w3_instance.eth.chain_id
+                assert (int(cid) == int(self.chain_id))
+                w3_instance.eth.get_balance(to_checksum_address('0x'+'0'*40))
+                w3_instance.eth.fee_history(5, 'latest', [10, 20, 30])
+                gp = w3_instance.eth.gas_price
+                if int(gp) <= 0:
+                    raise ValueError('Invalid gas price received!')
+
+        except AssertionError:
+            print(f'[!] WARNING: endpoint {endpoint} is on the wrong chain!')
+        except ValueError as err:
+            if self.verbose:
+                print(f'Nonsensical data returned from endpoint: {endpoint}, error: {err}')
+
+
         except Exception as err:
+            if self.verbose:
+                print('Error with endpoint: %s , error: %s' % (endpoint, err))
             return None, 0
         assert blocks is not None
         elapsed = t.stop()
@@ -122,7 +141,7 @@ class ChainRPCIterator:
         return False
 
 
-    def get_web3_instances(self, protocol='http', as_cycler: bool = False):
+    def get_web3_instances(self, protocol='http', as_cycler: bool = False, quick_mode=False):
         """
         Initializes and returns a list of web3.Web3 instances for the RPC URLs.
 
@@ -144,7 +163,7 @@ class ChainRPCIterator:
                         if web3_instance.is_connected() and web3_instance.eth.chain_id > 0:
                             if self.test_poa_chain(web3_instance):
                                 web3_instance.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-                            ep, run_time = self.time_rpc(web3_instance, rpc)
+                            ep, run_time = self.time_rpc(web3_instance, rpc, quick_mode)
                             if ep:
                                 rpc_time_map_http.update({ep: run_time})
                                 web3_instances.append(web3_instance)
@@ -166,7 +185,7 @@ class ChainRPCIterator:
                             if web3_instance.is_connected() and web3_instance.eth.chain_id > 0:
                                 if self.test_poa_chain(web3_instance):
                                     web3_instance.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-                                ep, run_time = self.time_rpc(web3_instance, rpc)
+                                ep, run_time = self.time_rpc(web3_instance, rpc, quick_mode)
                                 if ep:
                                     rpc_time_map_ws.update({ep: run_time})
 
@@ -214,23 +233,24 @@ def get_rpc_cycler(chain_id, protocol):
     return ChainRPCIterator(chain_id).get_web3_instances(protocol)
 
 if __name__ == '__main__':
-    args = argparse.ArgumentParser()
+    args = argparse.ArgumentParser(usage='\nExample: python3 %s 1 http # get http rpc\'s for ETH'
+                                         '\nExample: python3 %s 56 ws # get ws rpc\'s for BSC \n' % (sys.argv[0], 
+                                                                                                     sys.argv[0]),
+                                   description='Tool to aggregate, test, and determine the latency of EVM rpc\'s')
     args.add_argument("chain_id",  type=int, help="The chain ID.")
     args.add_argument("protocol",  type=str, help="Either 'http' or 'ws'.")
-    args.add_argument('-v', '--verbose', action='count', default=0)
-    subparsers = args.add_subparsers(dest='command')
-    timer = subparsers.add_parser('timer')
-    tester = subparsers.add_parser('tester')
+    args.add_argument('-q', '--quick', action='store_true',
+                      help='Disable extensive testing (not recommend)')
+    args.add_argument('-d', '--debug', action='store_true',
+                      help='Enable verbose debug mode')
+
 
     args = args.parse_args()
     dotenv.load_dotenv()
-    if args.command == 'tester':
-        w3s = ChainRPCIterator(args.chain_id, args.verbose).get_web3_instances(args.protocol)
-        print([r for r in w3s])
-    else:
-        cri = ChainRPCIterator(args.chain_id)
-        w3s = cri.get_web3_instances(args.protocol, args.verbose)
-        times = cri.time_maps
-        pprint.pp(times)
+    cri = ChainRPCIterator(args.chain_id, args.debug)
+    w3s = cri.get_web3_instances(args.protocol, False, args.quick)
+    times = cri.time_maps
+    pprint.pp(times)
+
 
 
