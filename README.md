@@ -5,22 +5,28 @@ Find the fastest pubic rpcs via chainlist.org
 
 
 <pre>
-usage: rpc_lib.py [-h] [-v] chain_id protocol {timer,tester} ...
+ python3 rpc_lib.py 1 http  -q -h
+usage: 
+Example: python3 rpc_lib.py 1 http # get http rpc's for ETH
+Example: python3 rpc_lib.py 56 ws # get ws rpc's for BSC 
+
+Tool to aggregate, test, and determine the latency of EVM rpc's
 
 positional arguments:
-  chain_id        The chain ID.
-  protocol        Either 'http' or 'ws'.
-  {timer,tester}
+  chain_id     The chain ID.
+  protocol     Either 'http' or 'ws'.
 
 options:
-  -h, --help      show this help message and exit
-  -v, --verbose
+  -h, --help   show this help message and exit
+  -q, --quick  Disable extensive testing (not recommend)
+  -d, --debug  Enable verbose debug mode
+
 
 </pre>
 
 <p>
 
-This script downloads a list of RPCS and then times their exceution by calling `eth.get_block('latest, full_transactions=True`) and then sorts and outputs each RPC url ang it's exec time. Obviously a shorter tine is faster. 
+This script downloads a list of RPCS and then times their exceution by calling `eth.get_block('latest, full_transactions=True`) and a few other methods to determine the RPC functions, and then sorts and outputs each RPC url ang it's exec time. Obviously a shorter tine is faster.  You can use the `--quick` flag to disable the more intensive testing if you'd like, although I do not recommend it.
   
 </p>
 
@@ -30,7 +36,7 @@ Also useful for testing which rpcs actually work.
 
 
 <pre>
-anon@foffmybox:~/PycharmProjects/Ethersweep$ venv/bin/python3 rpc_lib.py 56 http timer
+anon@foffmybox:~/PycharmProjects/Ethersweep$ venv/bin/python3 rpc_lib.py 56 http
 [('https://bsc-dataseed2.bnbchain.org', 0.2849881649017334),
  ('https://bsc-dataseed4.bnbchain.org', 0.16158127784729004),
  ('https://bsc-rpc.publicnode.com', 0.16069602966308594),
