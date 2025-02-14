@@ -31,7 +31,7 @@ This script downloads a list of RPCS and then times their exceution by calling `
 </p>
 
 <p>
-Also useful for testing which rpcs actually work. 
+NOTICE: make sure you set an infura API key env variable via dotenv or otherwise (`INFURA_API_KEY`) 
 </p>
 
 
