@@ -37,6 +37,10 @@ options:
  - Faster with non blocking io
 </p>
 
+
+### Usage
+
+
 <p>
 
 This script downloads a list of RPCS and then times their exceution by calling `eth.get_block('latest, full_transactions=True`) and a few other methods to determine the RPC functions, and then sorts and outputs each RPC url ang it's exec time. Obviously a shorter tine is faster.  You can use the `--quick` flag to disable the more intensive testing if you'd like, although I do not recommend it.
