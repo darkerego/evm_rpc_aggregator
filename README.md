@@ -7,22 +7,35 @@ Find the fastest pubic rpcs via chainlist.org
 <pre>
  python3 rpc_lib.py 1 http  -q -h
 usage: 
-Example: python3 rpc_lib.py 1 http # get http rpc's for ETH
-Example: python3 rpc_lib.py 56 ws # get ws rpc's for BSC 
+Example: python3 rpc_lib.py 1 http  # get http rpc's for ETH
+Example: python3 rpc_lib.py 56 ws   # get ws rpc's for BSC 
 
 Tool to aggregate, test, and determine the latency of EVM rpc's
 
 positional arguments:
-  chain_id     The chain ID.
-  protocol     Either 'http' or 'ws'.
+  chain_id              The chain ID.
+  protocol              Either 'http', 'ws', or 'all'
 
 options:
-  -h, --help   show this help message and exit
-  -q, --quick  Disable extensive testing (not recommend)
-  -d, --debug  Enable verbose debug mode
+  -h, --help            show this help message and exit
+  -a, --async           Use AsyncWeb3 (default: async enabled).
+  -s, --sync            Force sync Web3 instances.
+  -q, --quick           Disable extensive testing (not recommended for quality, but faster).
+  -v, --verbose
+  -d, --debug           Enable asyncio debug logging
+  --max-concurrency MAX_CONCURRENCY
+                        Maximum number of concurrent async RPC tests (default: 5).
 
 
 </pre>
+
+### Change Log
+
+<p>
+ - Now async by default
+ - Super improved errror handling
+ - Faster with non blocking io
+</p>
 
 <p>
 
